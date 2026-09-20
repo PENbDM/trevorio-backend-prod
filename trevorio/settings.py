@@ -18,7 +18,24 @@ ALLOWED_HOSTS = [
     if value.strip()
 ]
 
+GITHUB_CLIENT_ID = os.environ["GITHUB_CLIENT_ID"]
 
+GITHUB_CLIENT_SECRET = os.environ[
+    "GITHUB_CLIENT_SECRET"
+]
+
+GITHUB_CALLBACK_URL = os.environ[
+    "GITHUB_CALLBACK_URL"
+]
+
+GITHUB_TOKEN_ENCRYPTION_KEY = os.environ[
+    "GITHUB_TOKEN_ENCRYPTION_KEY"
+]
+
+FRONTEND_URL = os.environ.get(
+    "FRONTEND_URL",
+    "http://localhost:3000",
+)
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -31,6 +48,7 @@ INSTALLED_APPS = [
     "accounts",
     "data_sources",
     "queries",
+    'integrations',
 ]
 
 MIDDLEWARE = [
