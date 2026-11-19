@@ -1,0 +1,2 @@
+class QueryValidationError(Exception):
+    pass

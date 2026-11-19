@@ -8,6 +8,16 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
+
+
+
+
+
+
+
+
 
 # Security / local development
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "trevor-local-secret-key-2026")
@@ -49,7 +59,24 @@ INSTALLED_APPS = [
     "data_sources",
     "queries",
     'integrations',
+    'streaming',
+    'tracking',
 ]
+
+
+
+
+
+CELERY_BEAT_SCHEDULE = {
+    "change-detector-15-seconds": {
+        "task": 'streaming.tasks.change_detector_worker',
+        "schedule": 15.0,
+        # "args":(16,16),
+    },
+}
+
+CELERY_TIMEZONE = "UTC"
+
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -96,7 +123,7 @@ DATABASES = {
         "CONN_HEALTH_CHECKS": True,
     }
 }
-
+CUSTOMER_QUERY_MAX_ROWS = 1000
 
 AUTH_USER_MODEL = "accounts.User"
 AUTH_PASSWORD_VALIDATORS = []

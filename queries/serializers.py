@@ -30,4 +30,35 @@ class RunQuerySerializer(serializers.Serializer):
     )
     filters = QueryFilterSerializer(many=True, required=False, default=list)
     order_by = QueryOrderBySerializer(required=False, allow_null=True)
-    limit = serializers.IntegerField(required=False, default=100, min_value=1, max_value=1000)
+    page = serializers.IntegerField(
+        required=False,
+        default=1,
+        min_value=1,
+    )
+    page_size = serializers.IntegerField(
+        required=False,
+        default=100,
+        min_value=1,
+        max_value=1000,
+    )
+
+class RunRawQuerySerializer(
+    serializers.Serializer
+):
+    datasource_id = serializers.UUIDField()
+
+    sql = serializers.CharField(
+        allow_blank=False,
+        trim_whitespace=True,
+    )
+    page = serializers.IntegerField(
+        required=False,
+        default=1,
+        min_value=1,
+    )
+    page_size = serializers.IntegerField(
+        required=False,
+        default=100,
+        min_value=1,
+        max_value=1000,
+    )

@@ -10,4 +10,6 @@ urlpatterns = [
     path("api/queries/", include("queries.urls")),
     path("api/integrations/", include("integrations.urls"),
     ),
+    path("api/streaming/", include("streaming.urls")),
+    path('api/tracking/',include('tracking.urls')),
 ]

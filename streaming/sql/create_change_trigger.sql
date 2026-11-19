@@ -1,0 +1,5 @@
+CREATE TRIGGER change_detector
+AFTER INSERT OR UPDATE OR DELETE
+ON accounts_user
+FOR EACH ROW
+EXECUTE FUNCTION notify_table_change();
