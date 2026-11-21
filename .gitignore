@@ -1,9 +1,55 @@
-venv/
-.venv/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
 .idea/
 .vscode/
+
+# Operating system
 .DS_Store
-# Keep your local secrets out of Git even though this recovery archive includes .env for you.
-.env
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Celery
+celerybeat-schedule*
+celerybeat.pid
+
+# Local databases
+*.sqlite3
+
+# Test coverage
+.coverage
+htmlcov/
+coverage.xml
+
+# Terraform (if applicable)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Temporary files
+*.tmp
+*.bak

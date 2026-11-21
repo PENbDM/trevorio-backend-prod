@@ -1,0 +1,55 @@
+
+# Git
+.git
+.gitignore
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+venv
+.venv
+env
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# IDE
+.idea
+.vscode
+
+# Logs
+*.log
+logs
+
+# Celery
+celerybeat-schedule*
+celerybeat.pid
+
+# Tests and coverage
+.coverage
+htmlcov
+coverage.xml
+
+# Local databases
+*.sqlite3
+
+# Terraform
+.terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker Compose local configuration
+compose.override.yaml
