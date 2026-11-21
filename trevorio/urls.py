@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import include, path
+from trevorio.health import health_check
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -12,4 +13,5 @@ urlpatterns = [
     ),
     path("api/streaming/", include("streaming.urls")),
     path('api/tracking/',include('tracking.urls')),
+    path("health/", health_check, name="health-check"),
 ]

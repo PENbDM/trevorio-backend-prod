@@ -12,23 +12,22 @@ REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 
 CELERY_BROKER_URL = f"redis://{REDIS_HOST}:6379/0"
 CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:6379/1"
-
-
-
-
-
+STATIC_ROOT = BASE_DIR / "staticfiles"
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 
 # Security / local development
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "trevor-local-secret-key-2026")
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
+SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
 ALLOWED_HOSTS = [
     value.strip()
     for value in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
     if value.strip()
 ]
 
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 GITHUB_CLIENT_ID = os.environ["GITHUB_CLIENT_ID"]
 
 GITHUB_CLIENT_SECRET = os.environ[
@@ -82,6 +81,7 @@ CELERY_TIMEZONE = "UTC"
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -173,3 +173,11 @@ LOCAL_SECRET_KEY = os.getenv(
 CUSTOMER_QUERY_TIMEOUT_MS = int(
     os.getenv("CUSTOMER_QUERY_TIMEOUT_MS", "15000")
 )
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
