@@ -1,0 +1,38 @@
+services:
+  django:
+    build: .
+    command: gunicorn trevorio.asgi:application --worker-class asgi --bind 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      DB_HOST: host.docker.internal
+    depends_on:
+      - redis
+
+  celery-worker:
+    build: .
+    command: celery -A trevorio worker --loglevel=info --pool=prefork --concurrency=2
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      DB_HOST: host.docker.internal
+    depends_on:
+      - redis
+
+  celery-beat:
+    build: .
+    command: celery -A trevorio beat --loglevel=info
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      DB_HOST: host.docker.internal
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine

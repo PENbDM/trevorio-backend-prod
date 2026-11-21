@@ -8,9 +8,10 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:6379/0"
+CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:6379/1"
 
 
 
@@ -114,11 +115,11 @@ ASGI_APPLICATION = "trevorio.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "trevorio"),
-        "USER": os.getenv("DB_USER", "postgres"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+        "NAME": os.getenv("DB_NAME",),
+        "USER": os.getenv("DB_USER",),
+        "PASSWORD": os.getenv("DB_PASSWORD",),
+        "HOST": os.getenv("DB_HOST",),
+        "PORT": os.getenv("DB_PORT",),
         "CONN_MAX_AGE": 60,
         "CONN_HEALTH_CHECKS": True,
     }
