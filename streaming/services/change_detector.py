@@ -5,7 +5,7 @@ import logging
 from psycopg.rows import dict_row
 from psycopg import sql
 from time import perf_counter
-import time
+
 from streaming.services.serialize_rows import custom_serializer
 from streaming.services.redis.redis_snapshot import save_snapshot, get_snapshot
 from streaming.services.redis.compare_snapshots import compare_snapshots
@@ -14,22 +14,25 @@ from streaming.services.get_connection_details import main
 from streaming.services.redis.group_datasource_id_test import group_datasource_id_test
 from streaming.services.redis.redis_lock import redisLock
 
+
+logger = logging.getLogger(__name__)
+
+
 def change_detector():
     credentials = main()
 
     if not credentials:
-        print("No active sessions. Skipping change detection.")
+        logger.info("No active sessions. Skipping change detection.")
         return
 
     # Group tables by datasource_id
-    group_datasource_id = group_datasource_id_test(credentials)
+    grouped_datasources = group_datasource_id_test(credentials)
 
-    for datasource_group, credentials in group_datasource_id.items():
+    for datasource_group, connections in grouped_datasources.items():
 
-        # Get database credentials from the first table in the group
-        db_config = credentials[0]
-        # Measure PostgreSQL connection establishment
+        db_config = connections[0]
         start = perf_counter()
+
         try:
             with psycopg.connect(
                 dbname=db_config["dbname"],
@@ -42,28 +45,34 @@ def change_detector():
             ) as conn:
 
                 connection_time = perf_counter() - start
-                print(f"Start Datasource {datasource_group}: {connection_time:.4f}s")
-                # Reuse the same PostgreSQL connection for all tables
-                for connection in credentials:
-                    result=redisLock(connection['datasource_id'], connection["table_id"])
 
-                    acquire=result.acquire(blocking=False)
-                    if not acquire:
-                        print("Another worker is processing this table. Skipping.")
+                logger.info(
+                    "Datasource %s connected in %.4fs",
+                    datasource_group,
+                    connection_time
+                )
+
+                # Reuse PostgreSQL connection for all tables
+                for connection in connections:
+
+                    datasource_id = connection["datasource_id"]
+                    table_id = connection["table_id"]
+                    table_name = connection["table_name"]
+                    dbname = connection["dbname"]
+
+                    lock = redisLock(datasource_id, table_id)
+
+                    acquired = lock.acquire(blocking=False)
+
+                    if not acquired:
+                        logger.info(
+                            "Another worker is processing table %s. Skipping.",
+                            table_name
+                        )
                         continue
+
                     try:
-                        # WORKER CRASH TEST:
-                        # Lock is held for up to 60 seconds.
-                        # Forcefully terminate Celery during this 25-second sleep.
-                        # print("CRASH TEST: Lock acquired. Terminate Celery worker now.")
-                        # time.sleep(25)
-                        # print("CRASH TEST: Worker survived the 25-second sleep.")
-
-                        dbname = connection["dbname"]
-                        table_name = connection["table_name"]
-                        table_id = connection["table_id"]
-
-                        # STEP 1 — PostgreSQL query and error handling
+                        # STEP 1 — Query PostgreSQL
                         try:
                             with conn.cursor(row_factory=dict_row) as cur:
                                 cur.execute(
@@ -73,52 +82,95 @@ def change_detector():
                                         ORDER BY id DESC
                                         LIMIT 3;
                                     """).format(
-                                        sql.Identifier(connection["table_name"])
+                                        sql.Identifier(table_name)
                                     )
                                 )
 
                                 newRows = cur.fetchall()
 
                         except psycopg.errors.UndefinedTable:
-                            print(f'Table {connection["table_name"]} does not exist.')
+                            logger.warning(
+                                "Table %s does not exist.",
+                                table_name
+                            )
                             continue
 
-                        # STEP 2 — Get previous snapshot from Redis
-                        oldRows = get_snapshot(dbname, table_name, table_id)
+                        # STEP 2 — Read previous Redis snapshot
+                        oldRows = get_snapshot(
+                            dbname,
+                            table_name,
+                            table_id
+                        )
 
-                        # STEP 3 — First snapshot
+                        # STEP 3 — Initialize first snapshot
                         if oldRows is None:
-                            serialized_rows = json.dumps(newRows, default=custom_serializer)
-                            save_snapshot(serialized_rows, dbname, table_name, table_id)
+                            serialized_rows = json.dumps(
+                                newRows,
+                                default=custom_serializer
+                            )
+
+                            save_snapshot(
+                                serialized_rows,
+                                dbname,
+                                table_name,
+                                table_id
+                            )
                             continue
 
                         # STEP 4 — Compare snapshots
-                        desialized_Rows = json.loads(oldRows)
+                        deserialized_rows = json.loads(oldRows)
 
-                        isDetected = compare_snapshots(desialized_Rows, newRows)
+                        detected_ids = compare_snapshots(
+                            deserialized_rows,
+                            newRows
+                        )
 
                         notification = {
-                            "datasource_id": connection["datasource_id"],
-                            "table_id": connection["table_id"],
-                            "new_row_ids": isDetected
+                            "datasource_id": datasource_id,
+                            "table_id": table_id,
+                            "new_row_ids": detected_ids
                         }
 
-                        logger = logging.getLogger(__name__)
+                        if detected_ids:
+                            publish(
+                                "detection",
+                                json.dumps(notification)
+                            )
 
-                        if isDetected:
-                            publish("detection", json.dumps(notification))
+                            logger.info(
+                                "Detected %d new rows in table %s.",
+                                len(detected_ids),
+                                table_name
+                            )
                         else:
-                            logger.info(f'No changes detected for table {table_name}.')
+                            logger.info(
+                                "No changes detected for table %s.",
+                                table_name
+                            )
 
-                        # STEP 5 — Save new snapshot
-                        serialized_rows = json.dumps(newRows, default=custom_serializer)
-                        save_snapshot(serialized_rows, dbname, table_name, table_id)
+                        # STEP 5 — Save updated snapshot
+                        serialized_rows = json.dumps(
+                            newRows,
+                            default=custom_serializer
+                        )
+
+                        save_snapshot(
+                            serialized_rows,
+                            dbname,
+                            table_name,
+                            table_id
+                        )
+
                     finally:
-                        if result.owned():
-                            result.release()
+                        if lock.owned():
+                            lock.release()
+
         except psycopg.OperationalError:
-            print(f'Datasource {datasource_group} connection failed.')
-        continue
+            logger.exception(
+                "Datasource %s connection failed.",
+                datasource_group
+            )
+
 
 if __name__ == "__main__":
     change_detector()

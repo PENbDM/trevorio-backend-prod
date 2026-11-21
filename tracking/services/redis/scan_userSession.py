@@ -1,8 +1,6 @@
-import redis
+from trevorio.redis_client import r
 from streaming.services.get_unique_tables import get_unique_tables
 
-
-r= redis.Redis(host='localhost', port=6379, db=0,decode_responses=True)
 
 def scan_userSession():
     pipe = r.pipeline()

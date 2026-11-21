@@ -1,5 +1,5 @@
-import redis
-r = redis.Redis(host='localhost', port=6379, db=0,decode_responses=True)
+from trevorio.redis_client import r
+
 
 
 def compare_snapshots(old,new):

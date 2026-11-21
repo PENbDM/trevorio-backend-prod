@@ -1,6 +1,5 @@
-import redis
+from trevorio.redis_client import r
 
-r = redis.Redis(host='localhost', port=6379, db=0,decode_responses=True)
 
 
 def make_record(user_id,table_id,datasource_id):
