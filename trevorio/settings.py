@@ -8,10 +8,25 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 
-CELERY_BROKER_URL = f"redis://{REDIS_HOST}:6379/0"
-CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:6379/1"
+
+
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = os.getenv("REDIS_PORT", "6379")
+REDIS_USE_TLS = os.getenv("REDIS_USE_TLS", "false").lower() == "true"
+
+REDIS_SCHEME = "rediss" if REDIS_USE_TLS else "redis"
+
+CELERY_BROKER_URL = f"{REDIS_SCHEME}://{REDIS_HOST}:{REDIS_PORT}/0"
+CELERY_RESULT_BACKEND = f"{REDIS_SCHEME}://{REDIS_HOST}:{REDIS_PORT}/1"
+
+if REDIS_USE_TLS:
+    CELERY_BROKER_URL += "?ssl_cert_reqs=required"
+    CELERY_RESULT_BACKEND += "?ssl_cert_reqs=required"
+
+
+
+
 STATIC_ROOT = BASE_DIR / "staticfiles"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
