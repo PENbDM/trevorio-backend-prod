@@ -171,10 +171,15 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # Local datasource credential encryption key.
-LOCAL_SECRET_KEY = os.getenv(
-    "LOCAL_SECRET_KEY",
-    "trevor-local-datasource-secret-2026",
-)
+LOCAL_SECRET_KEY = os.getenv("LOCAL_SECRET_KEY")
+
+if not LOCAL_SECRET_KEY:
+    if DEBUG:
+        LOCAL_SECRET_KEY = "trevor-local-datasource-secret-2026"
+    else:
+        raise ValueError(
+            "LOCAL_SECRET_KEY must be configured in production"
+        )
 
 # Maximum runtime for SQL executed against a connected customer PostgreSQL DB.
 CUSTOMER_QUERY_TIMEOUT_MS = int(
